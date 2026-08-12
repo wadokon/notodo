@@ -746,6 +746,16 @@ namespace NotoDo
         {
             // WM_NCCALCSIZE: THICKFRAME由来の枠を消してクライアント領域を全面にする
             if (m.Msg == 0x83 && m.WParam != IntPtr.Zero) { m.Result = IntPtr.Zero; return; }
+            // WM_NCACTIVATE: lParam=-1 を渡すと DefWindowProc が非クライアント枠を
+            // 再描画しない。アクティブ⇔非アクティブ切替時に枠が白く描かれる問題の対策。
+            if (m.Msg == 0x86)
+            {
+                m.LParam = (IntPtr)(-1);
+                base.WndProc(ref m);
+                return;
+            }
+            // WM_NCPAINT / WM_NCUAHDRAWCAPTION / WM_NCUAHDRAWFRAME: 枠の描画を抑止
+            if (m.Msg == 0x85 || m.Msg == 0xAE || m.Msg == 0xAF) { m.Result = IntPtr.Zero; return; }
             if (m.Msg == 0x84) // WM_NCHITTEST: 右端だけリサイズ可能にする
             {
                 int lp = m.LParam.ToInt32();
