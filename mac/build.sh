@@ -4,7 +4,7 @@
 set -e
 cd "$(dirname "$0")"
 
-swiftc -O -o NotoDo NotoDo.swift
+swiftc -O -parse-as-library -o NotoDo NotoDo.swift
 
 APP=NotoDo.app
 rm -rf "$APP"

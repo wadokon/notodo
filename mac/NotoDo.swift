@@ -406,7 +406,11 @@ final class SyncEngine {
         props[titleProp ?? "Name"] = ["title": [["text": ["content": op.text]]]]
         if let dp = doneProp { props[dp] = ["checkbox": op.done] }
         if let pp = dateProp {
-            props[pp] = ["date": op.doneAt == nil ? NSNull() : ["start": op.doneAt!]]
+            if let da = op.doneAt {
+                props[pp] = ["date": ["start": da]]
+            } else {
+                props[pp] = ["date": NSNull()]
+            }
         }
         if let hp = hideProp { props[hp] = ["checkbox": op.hidden] }
         return props
