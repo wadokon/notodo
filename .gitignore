@@ -1,0 +1,16 @@
+# 個人設定・データ（絶対にコミットしない）
+notion-config.json
+todos.json
+todo-position.json
+notodo-error.log
+todo-error.log
+
+# ビルド成果物
+*.exe
+*.bak
+mac/NotoDo
+mac/NotoDo.app/
+
+# OS
+.DS_Store
+Thumbs.db
