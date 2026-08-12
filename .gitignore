@@ -11,6 +11,9 @@ todo-error.log
 mac/NotoDo
 mac/NotoDo.app/
 
+# ローカル専用メモ
+*.local.md
+
 # OS
 .DS_Store
 Thumbs.db
