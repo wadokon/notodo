@@ -1,4 +1,12 @@
 # vX.Y.Z タグを push すると Windows/macOS のバイナリをビルドして Release に添付する
+#
+# macOS の署名・公証（任意）: 以下の Secrets を設定すると自動で署名＋公証される。
+# 未設定の場合は無署名ビルドになる。
+#   MACOS_CERT_P12              Developer ID Application 証明書(.p12)の base64
+#   MACOS_CERT_PASSWORD         .p12 のパスワード
+#   APPLE_ID                    Apple ID（メールアドレス）
+#   APPLE_TEAM_ID               Team ID（developer.apple.com の Membership に記載）
+#   APPLE_APP_SPECIFIC_PASSWORD Apple ID のアプリ用パスワード
 name: release
 
 on:
@@ -28,14 +36,55 @@ jobs:
 
   build-mac:
     runs-on: macos-latest
+    env:
+      MACOS_CERT_P12: ${{ secrets.MACOS_CERT_P12 }}
+      MACOS_CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+      APPLE_ID: ${{ secrets.APPLE_ID }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
+
       - name: Build NotoDo.app
         run: |
           cd mac
           chmod +x build.sh
           ./build.sh
-          ditto -c -k --keepParent NotoDo.app ../NotoDo-mac.zip
+
+      - name: Import signing certificate
+        if: env.MACOS_CERT_P12 != ''
+        run: |
+          KEYCHAIN_PW=$(uuidgen)
+          security create-keychain -p "$KEYCHAIN_PW" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "$KEYCHAIN_PW" build.keychain
+          security set-keychain-settings -t 3600 build.keychain
+          echo "$MACOS_CERT_P12" | base64 --decode > cert.p12
+          security import cert.p12 -k build.keychain -P "$MACOS_CERT_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PW" build.keychain
+          rm cert.p12
+
+      - name: Sign
+        if: env.MACOS_CERT_P12 != ''
+        run: |
+          codesign --force --timestamp --options runtime \
+            --sign "Developer ID Application" mac/NotoDo.app
+          codesign --verify --strict --verbose=2 mac/NotoDo.app
+
+      - name: Notarize & staple
+        if: env.MACOS_CERT_P12 != ''
+        run: |
+          ditto -c -k --keepParent mac/NotoDo.app notarize.zip
+          xcrun notarytool submit notarize.zip \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_APP_SPECIFIC_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" \
+            --wait
+          xcrun stapler staple mac/NotoDo.app
+
+      - name: Package
+        run: ditto -c -k --keepParent mac/NotoDo.app NotoDo-mac.zip
+
       - uses: actions/upload-artifact@v4
         with:
           name: mac
