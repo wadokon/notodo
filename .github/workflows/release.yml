@@ -1,0 +1,55 @@
+# vX.Y.Z タグを push すると Windows/macOS のバイナリをビルドして Release に添付する
+name: release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build NotoDo.exe
+        shell: cmd
+        run: >
+          %windir%\Microsoft.NET\Framework64\v4.0.30319\csc.exe /nologo /codepage:65001
+          /target:winexe /out:NotoDo.exe
+          /r:System.dll /r:System.Core.dll /r:System.Drawing.dll
+          /r:System.Windows.Forms.dll /r:System.Web.Extensions.dll
+          windows\NotoDo.cs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: NotoDo.exe
+
+  build-mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build NotoDo.app
+        run: |
+          cd mac
+          chmod +x build.sh
+          ./build.sh
+          ditto -c -k --keepParent NotoDo.app ../NotoDo-mac.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mac
+          path: NotoDo-mac.zip
+
+  release:
+    needs: [build-windows, build-mac]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            NotoDo.exe
+            NotoDo-mac.zip

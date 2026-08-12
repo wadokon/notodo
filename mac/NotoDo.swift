@@ -631,6 +631,8 @@ final class WidgetPanel {
     }
 
     func updateStatusDot() {
+        // Notion未設定＝ローカルモードではドットを表示しない
+        statusDot.isHidden = (engine.status == .noConfig)
         let color: NSColor
         switch engine.status {
         case .ok: color = NSColor(red: 0.33, green: 0.75, blue: 0.51, alpha: 1)

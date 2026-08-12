@@ -983,18 +983,18 @@ namespace NotoDo
             var dateSize = TextRenderer.MeasureText(date, fontSmall);
             TextRenderer.DrawText(g, date, fontSmall, new Point(Width - dateSize.Width - 24, 9), Color.FromArgb(150, 155, 165));
 
-            // 同期状態ドット
-            Color dot = Color.FromArgb(110, 115, 125);
-            if (Engine != null)
+            // 同期状態ドット（Notion未設定＝ローカルモードでは表示しない）
+            if (Engine != null && Engine.Status != SyncStatus.NoConfig)
             {
+                Color dot = Color.FromArgb(110, 115, 125);
                 switch (Engine.Status)
                 {
                     case SyncStatus.Ok: dot = Color.FromArgb(85, 190, 130); break;
                     case SyncStatus.Syncing: dot = Color.FromArgb(230, 180, 70); break;
                     case SyncStatus.Error: dot = Color.FromArgb(225, 95, 95); break;
                 }
+                using (var b = new SolidBrush(dot)) g.FillEllipse(b, Width - 17, 12, 8, 8);
             }
-            using (var b = new SolidBrush(dot)) g.FillEllipse(b, Width - 17, 12, 8, 8);
 
             using (var line = new Pen(Color.FromArgb(55, 58, 66)))
                 g.DrawLine(line, 10, HeaderH - 2, Width - 10, HeaderH - 2);
@@ -1152,7 +1152,7 @@ namespace NotoDo
                 case SyncStatus.Ok: status = "同期OK " + engine.LastOkTime.ToString("HH:mm"); break;
                 case SyncStatus.Syncing: status = "同期中"; break;
                 case SyncStatus.Error: status = "同期エラー"; break;
-                default: status = "未設定"; break;
+                default: status = "ローカル"; break;
             }
             var text = "TODO: " + n + "件 (" + status + ")";
             if (text.Length > 63) text = text.Substring(0, 63);
